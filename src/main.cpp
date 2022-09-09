@@ -1,12 +1,12 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
-//#include <ESP8266WiFi.h>
+#include <FSManager.h>
 #include <PubSubClient.h>
 
-#define mqtt_server "node02.myqtthub.com"
-#define mqtt_port 1883
-#define client_id "node0001"
-#define mqtt_user "node0001"
-#define mqtt_password "nodePass22"
+//#define mqtt_server "your.broker.url"
+//#define mqtt_port 1883
+//#define client_id "clientid"
+//#define mqtt_user "user"
+//#define mqtt_password "pass"
 
 #define in_topic "/light/in"
 #define out_topic "/light/out"
@@ -18,13 +18,14 @@ bool wm_nonblocking = false; // change to true to use non blocking
 
 bool portalRunning = false;
 
+FSManager FSM;
 
-WiFiManager wm;                    // global wm instance
-//WiFiManagerParameter custom_field; // global param ( for non blocking w params )
-  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "-", 40);
-  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "-", 6);
-  WiFiManagerParameter custom_mqtt_user("mqttUser", "mqtt user", "-", 32);
-  WiFiManagerParameter custom_mqtt_pass("mqttPass", "mqtt pass ", "-", 32);
+WiFiManager wm; // global wm instance
+// WiFiManagerParameter custom_field; // global param ( for non blocking w params )
+WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "-", 40);
+WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "-", 6);
+WiFiManagerParameter custom_mqtt_user("mqttUser", "mqtt user", "-", 32);
+WiFiManagerParameter custom_mqtt_pass("mqttPass", "mqtt pass ", "-", 32);
 
 WiFiClient espClient;
 PubSubClient client;
@@ -46,22 +47,28 @@ void saveParamCallback()
   Serial.println("PARAM mqtt server : " + getParam("server"));
 }
 
-void checkButton(){
+void checkButton()
+{
   // is auto timeout portal running
-  if(portalRunning){
+  if (portalRunning)
+  {
     wm.process();
   }
 
   // is configuration portal requested?
-  if(digitalRead(TRIGGER_PIN) == LOW) {
+  if (digitalRead(TRIGGER_PIN) == LOW)
+  {
     delay(50);
-    if(digitalRead(TRIGGER_PIN) == LOW) {
-      if(!portalRunning){
+    if (digitalRead(TRIGGER_PIN) == LOW)
+    {
+      if (!portalRunning)
+      {
         Serial.println("Button Pressed, Starting Portal");
         wm.startWebPortal();
         portalRunning = true;
       }
-      else{
+      else
+      {
         Serial.println("Button Pressed, Stopping Portal");
         wm.stopWebPortal();
         portalRunning = false;
@@ -73,6 +80,7 @@ void checkButton(){
 void setup_wifi()
 {
   delay(10);
+
   // We start by connecting to a WiFi network
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
   Serial.begin(115200);
@@ -81,24 +89,27 @@ void setup_wifi()
   Serial.println("\n Starting");
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
 
+  // Start FS Manager
+  if (FSM.init()) {
+    Serial.println("\n Filesystem Started Ok.");
+  }
+
   // wm.resetSettings(); // wipe settings
 
   if (wm_nonblocking)
     wm.setConfigPortalBlocking(false);
 
-
   // parameters
 
-
   // add a custom input field
-  //int customFieldLength = 40;
+  // int customFieldLength = 40;
 
   // test custom html(radio)
-  //const char *custom_radio_str = "<br/><label for='customfieldid'>Custom Field Label</label><input type='radio' name='customfieldid' value='1' checked> One<br><input type='radio' name='customfieldid' value='2'> Two<br><input type='radio' name='customfieldid' value='3'> Three";
-  //new (&custom_field) WiFiManagerParameter(custom_radio_str); // custom html input
+  // const char *custom_radio_str = "<br/><label for='customfieldid'>Custom Field Label</label><input type='radio' name='customfieldid' value='1' checked> One<br><input type='radio' name='customfieldid' value='2'> Two<br><input type='radio' name='customfieldid' value='3'> Three";
+  // new (&custom_field) WiFiManagerParameter(custom_radio_str); // custom html input
 
-  //wm.addParameter(&custom_field);
-  
+  // wm.addParameter(&custom_field);
+
   wm.addParameter(&custom_mqtt_server);
   wm.addParameter(&custom_mqtt_port);
   wm.addParameter(&custom_mqtt_user);
@@ -106,7 +117,7 @@ void setup_wifi()
 
   wm.setSaveParamsCallback(saveParamCallback);
 
-  std::vector<const char *> menu = {"wifi", "param", "sep", "restart", "exit"};
+  std::vector<const char*> menu = { "wifi", "param", "sep", "restart", "exit" };
   wm.setMenu(menu);
 
   // set dark theme
@@ -129,7 +140,7 @@ void setup_wifi()
   }
 }
 
-void callback(char *topic, byte *payload, unsigned int length)
+void callback(char* topic, byte* payload, unsigned int length)
 {
   Serial.print("Message arrived [");
   Serial.print(topic);

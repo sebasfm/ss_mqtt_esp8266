@@ -1,0 +1,12 @@
+{
+    "mqtt_broker1": "",
+    "mqtt_port1": "",
+    "mqtt_id1": "",
+    "mqtt_user1": "",
+    "mqtt_pass1": "",
+    "mqtt_broker2": "",
+    "mqtt_port2": "",
+    "mqtt_id2": "",
+    "mqtt_user2": "",
+    "mqtt_pass2": ""
+}
