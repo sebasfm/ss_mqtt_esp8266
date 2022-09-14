@@ -8,24 +8,37 @@
 //#define mqtt_user "user"
 //#define mqtt_password "pass"
 
+//#define mqtt_server "node02.myqtthub.com"
+//#define mqtt_port 1883
+//#define client_id "node0001"
+//#define mqtt_user "node0001"
+//#define mqtt_password "thisNodePass22"
+
 #define in_topic "/light/in"
 #define out_topic "/light/out"
 // Replace by 2 if you aren't enable to use Serial Monitor... Don't forget to Rewire R1 to GPIO2!
 #define in_led 2
 #define TRIGGER_PIN 0
 
-bool wm_nonblocking = false; // change to true to use non blocking
+unsigned long myTime;
 
+bool wm_nonblocking = false; // change to true to use non blocking
 bool portalRunning = false;
+char mqtt_server[40];
+char mqtt_port[6];
+char mqtt_id[40];
+char mqtt_user[40];
+char mqtt_pass[40];
 
 FSManager FSM;
 
 WiFiManager wm; // global wm instance
+
 // WiFiManagerParameter custom_field; // global param ( for non blocking w params )
-WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "-", 40);
-WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "-", 6);
-WiFiManagerParameter custom_mqtt_user("mqttUser", "mqtt user", "-", 32);
-WiFiManagerParameter custom_mqtt_pass("mqttPass", "mqtt pass ", "-", 32);
+WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "", 40);
+WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "", 6);
+WiFiManagerParameter custom_mqtt_user("mqttUser", "mqtt user", "", 32);
+WiFiManagerParameter custom_mqtt_pass("mqttPass", "mqtt pass ", "", 32);
 
 WiFiClient espClient;
 PubSubClient client;
@@ -45,6 +58,9 @@ void saveParamCallback()
 {
   Serial.println("[CALLBACK] saveParamCallback fired");
   Serial.println("PARAM mqtt server : " + getParam("server"));
+  Serial.println("PARAM mqtt server : " + getParam("port"));
+  Serial.println("PARAM mqtt server : " + getParam("mqttUser"));
+  Serial.println("PARAM mqtt server : " + getParam("mqttPass"));
 }
 
 void checkButton()
@@ -89,11 +105,6 @@ void setup_wifi()
   Serial.println("\n Starting");
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
 
-  // Start FS Manager
-  if (FSM.init()) {
-    Serial.println("\n Filesystem Started Ok.");
-  }
-
   // wm.resetSettings(); // wipe settings
 
   if (wm_nonblocking)
@@ -109,6 +120,8 @@ void setup_wifi()
   // new (&custom_field) WiFiManagerParameter(custom_radio_str); // custom html input
 
   // wm.addParameter(&custom_field);
+
+  custom_mqtt_server.setValue(mqtt_server, 40);
 
   wm.addParameter(&custom_mqtt_server);
   wm.addParameter(&custom_mqtt_port);
@@ -145,7 +158,7 @@ void callback(char* topic, byte* payload, unsigned int length)
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
-  for (int i = 0; i < length; i++)
+  for (unsigned int i = 0; i < length; i++)
   {
     char receivedChar = (char)payload[i];
     Serial.print(receivedChar);
@@ -160,9 +173,21 @@ void callback(char* topic, byte* payload, unsigned int length)
 void setup()
 {
   Serial.begin(115200);
+  delay(3000);
+  // Start FS Manager
+  if (FSM.init()) {
+    Serial.println("\n Filesystem Started Ok.");
+  }
+
+  strcpy(mqtt_server, "A_verGaston");
+  strcpy(mqtt_port, "1234");
+  strcpy(mqtt_id, "1234");
+  strcpy(mqtt_user, "user1234");
+  strcpy(mqtt_pass, "pass1234");
+
   setup_wifi();
   client.setClient(espClient);
-  client.setServer(mqtt_server, mqtt_port);
+  client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
 
   // initialize digital pin LED_BUILTIN as an output.
@@ -173,13 +198,13 @@ void setup()
 void reconnect()
 {
   // Loop until we're reconnected
-  while (!client.connected())
+  if (!client.connected() && (millis() - myTime) > 20000)
   {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     // If you do not want to use a username and password, change next line to
     // if (client.connect("ESP8266Client")) {
-    if (client.connect(client_id, mqtt_user, mqtt_password))
+    if (client.connect(mqtt_id, mqtt_user, mqtt_pass))
     {
       Serial.println("connected");
     }
@@ -187,9 +212,9 @@ void reconnect()
     {
       Serial.print("failed, rc=");
       Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
+      Serial.println(" try again in 20 seconds");
       // Wait 5 seconds before retrying
-      delay(5000);
+      myTime = millis();
     }
   }
 }

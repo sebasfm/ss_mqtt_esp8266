@@ -2467,6 +2467,8 @@ void WiFiManager::reboot(){
   #ifdef WM_DEBUG_LEVEL
   DEBUG_WM(F("Restarting"));
   #endif
+  pinMode(2, INPUT_PULLUP);
+  pinMode(0, INPUT_PULLUP);
   ESP.restart();
 }
 
