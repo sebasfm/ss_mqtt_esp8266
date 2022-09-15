@@ -1,6 +1,8 @@
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 #include <FSManager.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
+#include "structures.h"
 
 //#define mqtt_server "your.broker.url"
 //#define mqtt_port 1883
@@ -24,11 +26,8 @@ unsigned long myTime;
 
 bool wm_nonblocking = false; // change to true to use non blocking
 bool portalRunning = false;
-char mqtt_server[40];
-char mqtt_port[6];
-char mqtt_id[40];
-char mqtt_user[40];
-char mqtt_pass[40];
+
+mqttConfig mqttConf;
 
 FSManager FSM;
 
@@ -121,7 +120,12 @@ void setup_wifi()
 
   // wm.addParameter(&custom_field);
 
-  custom_mqtt_server.setValue(mqtt_server, 40);
+
+  //set the values to show in portal
+  custom_mqtt_server.setValue(mqttConf.mqtt_server, 40);
+  custom_mqtt_port.setValue(mqttConf.mqtt_port, 6);
+  custom_mqtt_user.setValue(mqttConf.mqtt_user, 40);
+  custom_mqtt_pass.setValue(mqttConf.mqtt_pass, 40);
 
   wm.addParameter(&custom_mqtt_server);
   wm.addParameter(&custom_mqtt_port);
@@ -177,17 +181,18 @@ void setup()
   // Start FS Manager
   if (FSM.init()) {
     Serial.println("\n Filesystem Started Ok.");
+    mqttConf = FSM.configRead();
   }
 
-  strcpy(mqtt_server, "A_verGaston");
-  strcpy(mqtt_port, "1234");
-  strcpy(mqtt_id, "1234");
-  strcpy(mqtt_user, "user1234");
-  strcpy(mqtt_pass, "pass1234");
+/*   strcpy(mqttConf.mqtt_server, "A_verGaston");
+  strcpy(mqttConf.mqtt_port, "1234");
+  strcpy(mqttConf.mqtt_id, "1234");
+  strcpy(mqttConf.mqtt_user, "user1234");
+  strcpy(mqttConf.mqtt_pass, "pass1234"); */
 
   setup_wifi();
   client.setClient(espClient);
-  client.setServer(mqtt_server, atoi(mqtt_port));
+  client.setServer(mqttConf.mqtt_server, atoi(mqttConf.mqtt_port));
   client.setCallback(callback);
 
   // initialize digital pin LED_BUILTIN as an output.
@@ -204,7 +209,7 @@ void reconnect()
     // Attempt to connect
     // If you do not want to use a username and password, change next line to
     // if (client.connect("ESP8266Client")) {
-    if (client.connect(mqtt_id, mqtt_user, mqtt_pass))
+    if (client.connect(mqttConf.mqtt_id, mqttConf.mqtt_user, mqttConf.mqtt_pass))
     {
       Serial.println("connected");
     }

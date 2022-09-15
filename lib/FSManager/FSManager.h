@@ -8,8 +8,11 @@
  * @license MIT
  */
 
+#include "structures.h"
+
 class FSManager
 {
 public:
     bool init();
+    mqttConfig configRead();
 };
